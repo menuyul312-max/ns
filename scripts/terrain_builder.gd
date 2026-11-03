@@ -4,12 +4,13 @@ extends RefCounted
 
 const EDGE_SUBDIVISIONS: int = 10
 const CORNER_SUBDIVISIONS: int = 10
-const WALL_ROWS: int = 8
+const WALL_ROWS: int = 12
 const CORNER_RADIUS: float = 0.43
 const MASK_CORNER_RADIUS: float = 0.82
 const INLET_FILLET_RADIUS: float = 0.72
-const CORNER_ARC_MIX: float = 0.62
+const CORNER_ARC_MIX: float = 0.54
 const GROUND_RADIAL_ROWS: int = 6
+const CLIFF_LEDGE_HEIGHT: float = 0.080
 
 const GROUND_SHADER: String = """
 shader_type spatial;
@@ -631,7 +632,7 @@ static func _lip_width(island: IslandDefinition, x: int, z: int, direction: int,
 	var world: float = (float(x) + t) if direction == 0 else ((float(z) + t) if direction == 1 else ((float(x + 1) - t) if direction == 2 else (float(z + 1) - t)))
 	var side: float = float(z) if direction == 0 else (float(x + 1) if direction == 1 else (float(z + 1) if direction == 2 else float(x)))
 	var seed: float = float(island.seed % 233) * 0.01
-	return 0.12 + 0.041 * sin(world * 5.3 + side * 1.7 + seed) + 0.020 * sin(world * 11.7 + side * 3.5 + seed)
+	return 0.125 + 0.053 * sin(world * 5.3 + side * 1.7 + seed) + 0.024 * sin(world * 11.7 + side * 3.5 + seed)
 
 
 static func _wall_offset(island: IslandDefinition, x: int, z: int, direction: int, t: float, depth_factor: float) -> float:
@@ -645,7 +646,18 @@ static func _wall_offset(island: IslandDefinition, x: int, z: int, direction: in
 	var belly: float = 0.135 * sin(depth_factor * PI) * (0.78 + 0.22 * sin(along * 3.1 + side * 0.8 + seed))
 	var facets: float = (0.038 * sin(along * 5.6 + depth_factor * 2.1 + seed)
 		+ 0.017 * sin(along * 11.4 - depth_factor * 4.7 - seed)) * sin(depth_factor * PI)
-	return lip * (1.0 - depth_factor) + belly + facets
+	# Sprint 53: two irregular horizontal rock ledges separated by a recessed
+	# strata line. These are not repeated per tile: along/side are world-grid
+	# coordinates shared by adjacent exposed walls and corner interpolation.
+	# sin(PI * depth) pins the correction to zero at top/bottom, so the wall
+	# remains joined to the grass lip and its lower collision boundary.
+	var upper_layer: float = 0.31 + 0.045 * sin(along * 2.4 + seed)
+	var lower_layer: float = 0.73 + 0.035 * cos(along * 1.8 - seed)
+	var upper_ledge: float = exp(-pow((depth_factor - upper_layer) / 0.12, 2.0))
+	var lower_ledge: float = exp(-pow((depth_factor - lower_layer) / 0.105, 2.0))
+	var recessed_joint: float = exp(-pow((depth_factor - 0.56) / 0.08, 2.0))
+	var stratified: float = CLIFF_LEDGE_HEIGHT * (upper_ledge + 0.55 * lower_ledge - 0.42 * recessed_joint) * sin(depth_factor * PI)
+	return lip * (1.0 - depth_factor) + belly + facets + stratified
 
 
 static func _emit_facet_quad(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, ca: Color, cb: Color, cc: Color, cd: Color) -> void:

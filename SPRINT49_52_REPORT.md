@@ -1,5 +1,7 @@
 # Sprint 49–52 — Outer Coast Mask, Moving Surf, Cache and Godot CI
 
+> Historical note (Sprint 54): The experimental GitHub Actions workflow described below was subsequently **removed at the user's request**. The rest of the Sprint 49–51 implementation remains. CI should not be considered active.
+
 Status: implementation complete in source; CPU tests and comparison diagram executed. **Godot engine execution and screenshots remain pending CI result.**
 
 ## Sprint 49: Outer coastline and mask consistency
