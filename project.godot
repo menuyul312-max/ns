@@ -1,0 +1,13 @@
+config_version=5
+
+[application]
+config/name="Nusantara World Lab"
+run/main_scene="res://scenes/island_demo.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.69, 0.85, 0.98, 1)
+

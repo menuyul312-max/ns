@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600">
+  <rect width="960" height="600" fill="#101d29"/>
+  <text x="52" y="66" fill="#f1f7f7" font-family="sans-serif" font-weight="bold" font-size="30">ACNH RE — empat sektor terrain</text>
+  <text x="52" y="96" fill="#b9cdd6" font-family="sans-serif" font-size="17">Representasi diagram dari lookup 0x18adf0 dan sampler 0x162dc0; bukan tekstur game</text>
+  <g stroke="#0d1924" stroke-width="2">
+    <path d="M90 160 L450 160 L270 340 Z" fill="#ba796f"/>
+    <path d="M90 160 L270 340 L90 520 Z" fill="#d6bc76"/>
+    <path d="M90 520 L270 340 L450 520 Z" fill="#75b1a0"/>
+    <path d="M450 160 L450 520 L270 340 Z" fill="#82a4d4"/>
+  </g>
+  <g fill="#112734" font-family="sans-serif" font-weight="bold" font-size="26" text-anchor="middle">
+    <text x="270" y="237">0</text><text x="156" y="350">1</text><text x="270" y="462">2</text><text x="385" y="350">3</text>
+  </g>
+  <g stroke="white" stroke-width="3" fill="#f4fbfd">
+    <circle cx="270" cy="250" r="8"/><circle cx="180" cy="340" r="8"/>
+    <circle cx="270" cy="430" r="8"/><circle cx="360" cy="340" r="8"/>
+  </g>
+  <circle cx="270" cy="340" r="6" fill="#172a32"/>
+  <g fill="#c6d7dc" font-family="sans-serif" font-size="18">
+    <text x="510" y="175">Native: satu sel = 5 unit; pusat = (2.5, 2.5)</text>
+    <text x="510" y="218">Diagonal: v - u = 0 dan u + v - 5 = 0</text>
+    <text x="510" y="262">Empat sampel pada offset 1.25 dari pusat:</text>
+    <text x="531" y="300">N: (2.5, 1.25), sektor 0</text>
+    <text x="531" y="335">W: (1.25, 2.5), sektor 1</text>
+    <text x="531" y="370">S: (2.5, 3.75), sektor 2</text>
+    <text x="531" y="405">E: (3.75, 2.5), sektor 3</text>
+    <text x="510" y="470">Byte overlay 7 = gunakan atribut dasar</text>
+    <text x="510" y="505">Skala Godot Nusantara tetap 2.1 unit/tile</text>
+  </g>
+  <text x="88" y="554" font-family="sans-serif" font-size="15" fill="#a9c0cb">Sumber: github.com/menuyul312-max/acnh-re-results · ACNH 1.0.0 · ELF VA</text>
+</svg>
