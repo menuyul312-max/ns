@@ -63,9 +63,36 @@ def preview_stats():
     }
 
 
-def render(path=None):
+def region_diagnostic(mode=0):
+    """Independent CPU oracle for the *synthetic* Sprint48 projection.
+
+    The synthetic mapping is not a discovered ACNH water/height encoding.
+    This mirrors the documented fixture and the 3x3 diagnostic query only.
+    """
+    assert mode in (0, 1)
+    land,height,wet=island_fixture()
+    status=np.zeros((D,W),dtype=np.uint8)
+    samples=height.astype(float)*HEIGHT_STEP + (wet.astype(float)*.16 if mode == 0 else 0)
+    for z in range(D):
+        for x in range(W):
+            if not land[z,x]:
+                continue
+            if wet[z,x]:
+                status[z,x]=1
+                continue
+            xx0,xx1=max(x-1,0),min(x+2,W)
+            zz0,zz1=max(z-1,0),min(z+2,D)
+            neighborhood=land[zz0:zz1,xx0:xx1]
+            sample_window=samples[zz0:zz1,xx0:xx1]
+            valid=bool(neighborhood.all()) and float(sample_window.max()-sample_window.min())<=.10999999940395355
+            status[z,x]=2 if valid else 3
+    return status
+
+
+def render(path=None, diagnostic_mode=None):
     land,height,wet=island_fixture()
     colors={"grass":"#76a55b","sand":"#c9b785","cliff":"#8d7862", "sea":"#2385a2","river":"#47b9b9"}
+    statuses=region_diagnostic(diagnostic_mode) if diagnostic_mode is not None else None
     plt.rcParams.update({"font.family":"DejaVu Sans","figure.facecolor":"#102635", "savefig.facecolor":"#102635"})
     fig=plt.figure(figsize=(16,9),dpi=110)
     ax=fig.add_axes((0.02,0.08,0.69,0.83),projection="3d",computed_zorder=False)
@@ -86,7 +113,10 @@ def render(path=None):
                 (not (0<=x+dx<W and 0<=z+dz<D)) or not land[z+dz,x+dx]
                 for dx,dz in ((1,0),(-1,0),(0,1),(0,-1))
             )
-            top_cols.append(colors["sand"] if coast and h==0 and not wet[z,x] else colors["grass"])
+            if statuses is None:
+                top_cols.append(colors["sand"] if coast and h==0 and not wet[z,x] else colors["grass"])
+            else:
+                top_cols.append({1:"#39a6bc",2:"#78c681",3:"#e9aa63"}[int(statuses[z,x])])
             if wet[z,x]:
                 streams.append([(a,b,h+.055) for a,b,_ in corners])
             for dx,dz,edge in (
@@ -111,11 +141,16 @@ def render(path=None):
     ax.set_axis_off()
 
     top=fig.add_axes((.725,.19,.25,.62))
-    layer=np.zeros((D,W),dtype=np.int8)
-    layer[land]=1
-    layer[height>0]=2
-    layer[wet]=3
-    top.imshow(layer,cmap=ListedColormap((colors["sea"],colors["grass"],"#bfb48a",colors["river"])),interpolation="nearest",vmin=0,vmax=3)
+    if statuses is None:
+        layer=np.zeros((D,W),dtype=np.int8)
+        layer[land]=1
+        layer[height>0]=2
+        layer[wet]=3
+        palette=(colors["sea"],colors["grass"],"#bfb48a",colors["river"])
+    else:
+        layer=statuses
+        palette=("#2b5874","#39a6bc","#78c681","#e9aa63")
+    top.imshow(layer,cmap=ListedColormap(palette),interpolation="nearest",vmin=0,vmax=3)
     top.invert_yaxis()
     top.set_xticks(np.arange(-.5,W,1),minor=True)
     top.set_yticks(np.arange(-.5,D,1),minor=True)
@@ -123,13 +158,19 @@ def render(path=None):
     top.tick_params(which="both",bottom=False,left=False,labelbottom=False,labelleft=False)
     for spine in top.spines.values():
         spine.set_color("#b0c8c4")
-    top.set_title("DENAH 2D YANG SAMA",color="white",fontsize=13,pad=14,fontweight="bold")
+    top.set_title("RE REGION / 3x3" if statuses is not None else "DENAH 2D YANG SAMA",color="white",fontsize=13,pad=14,fontweight="bold")
 
-    fig.text(.03,.953,"NUSANTARA WORLD LAB 46  /  DIAGNOSTIC ISLAND OVERVIEW",color="white",fontsize=19,weight="bold")
+    title="NUSANTARA WORLD LAB 48  /  RE TERRAIN REGION DIAGNOSTIC" if statuses is not None else "NUSANTARA WORLD LAB 46  /  DIAGNOSTIC ISLAND OVERVIEW"
+    fig.text(.03,.953,title,color="white",fontsize=19,weight="bold")
     stats=preview_stats()
-    fig.text(.735,.11,f'{stats["land_tiles"]} darat   •   {stats["sea_tiles"]} laut\n{stats["cliff_tiles"]} tebing   •   {stats["river_tiles"]} sungai',color="#cde6dd",fontsize=11,linespacing=1.8)
-    fig.text(.03,.028,"PREVIEW CPU dari fixture_coast_mask • tanpa shader/noise/collision Godot • BUKAN capture game yang dijalankan",color="#f2c88f",fontsize=11)
-    output=Path(path) if path else ROOT/'s46_island_cpu_preview.png'
+    if statuses is None:
+        fig.text(.735,.11,f'{stats["land_tiles"]} darat   •   {stats["sea_tiles"]} laut\n{stats["cliff_tiles"]} tebing   •   {stats["river_tiles"]} sungai',color="#cde6dd",fontsize=11,linespacing=1.8)
+        footer="PREVIEW CPU dari fixture_coast_mask • tanpa shader/noise/collision Godot • BUKAN capture game yang dijalankan"
+    else:
+        fig.text(.735,.105,f'MODE {diagnostic_mode}   •   Pass {np.count_nonzero(statuses==2)}   •   Blocked {np.count_nonzero(statuses==3)}\nTurquoise: river   Green: pass   Orange: flagged\nDenah 20×14 / input sintetis, bukan aturan asli ACNH',color="#cde6dd",fontsize=10,linespacing=1.7)
+        footer="RE-inspired 3×3 region check • PREVIEW CPU (bukan renderer Godot) • warna mewakili mapping eksperimen"
+    fig.text(.03,.028,footer,color="#f2c88f",fontsize=11)
+    output=Path(path) if path else ROOT/('s48_region_cpu_mode%d.png'%diagnostic_mode if statuses is not None else 's46_island_cpu_preview.png')
     fig.savefig(output,facecolor=fig.get_facecolor(),dpi=110)
     plt.close(fig)
     return output

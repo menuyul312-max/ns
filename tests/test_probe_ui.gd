@@ -126,7 +126,7 @@ func _run() -> void:
 	if scene.land_mask_edit_mode:
 		_fail("T did not disable topology editing mode")
 		return
-	if not scene.status_label.text.contains("WORLD LAB 46"):
+	if not scene.status_label.text.contains("WORLD LAB 48"):
 		_fail("HUD still shows previous sprint")
 		return
 	print("PASS — zone, flow, rig, IK, build guard, access overlay, coast + mask modes and Lab 46 HUD")

@@ -12,6 +12,9 @@ var water_rules: WaterRules
 var water_audit: Dictionary = {}
 var access_audit: Dictionary = {}
 var coast_audit: Dictionary = {}
+var region_diagnostic_layer: CanvasLayer
+var show_region_diagnostic: bool = false
+var region_diagnostic_mode: int = 0
 var zone_overlay: Node3D
 var current_overlay: Node3D
 var access_overlay: Node3D
@@ -75,6 +78,7 @@ func _refresh_terrain() -> void:
 	add_child(link_root)
 	_refresh_zone_overlay()
 	_refresh_access_overlay()
+	_refresh_region_diagnostic()
 	if rejected_tile_marker != null and rejected_tile_marker.visible:
 		rejected_tile_marker.visible = false
 	if traversal_probe != null:
@@ -116,6 +120,22 @@ func _refresh_access_overlay() -> void:
 	if show_access_overlay:
 		access_overlay = IslandAccessOverlay.build(island, access_audit)
 		add_child(access_overlay)
+
+
+func _refresh_region_diagnostic() -> void:
+	if region_diagnostic_layer != null:
+		remove_child(region_diagnostic_layer)
+		region_diagnostic_layer.queue_free()
+		region_diagnostic_layer = null
+	if not show_region_diagnostic:
+		return
+	region_diagnostic_layer = CanvasLayer.new()
+	region_diagnostic_layer.name = "RERegionDiagnostic"
+	var panel := TerrainRegionDiagnostic.new()
+	panel.configure(island, region_diagnostic_mode)
+	panel.position = Vector2(795, 15)
+	region_diagnostic_layer.add_child(panel)
+	add_child(region_diagnostic_layer)
 
 
 func _input(event: InputEvent) -> void:
@@ -160,6 +180,14 @@ func _input(event: InputEvent) -> void:
 				_update_status()
 			KEY_Y:
 				show_re_ground_probe = not show_re_ground_probe
+				_update_status()
+			KEY_J:
+				show_region_diagnostic = not show_region_diagnostic
+				_refresh_region_diagnostic()
+				_update_status()
+			KEY_H:
+				region_diagnostic_mode = 1 - region_diagnostic_mode
+				_refresh_region_diagnostic()
 				_update_status()
 			KEY_K:
 				composer.protect_connectivity = not composer.protect_connectivity
@@ -385,7 +413,7 @@ func _create_hud() -> void:
 	var backdrop := Panel.new()
 	backdrop.name = "HUDBackdrop"
 	backdrop.position = Vector2(10, 10)
-	backdrop.size = Vector2(750, 375)
+	backdrop.size = Vector2(750, 405)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.07, 0.16, 0.21, 0.79)
 	panel_style.corner_radius_top_left = 11
@@ -440,7 +468,7 @@ func _update_status() -> void:
 		var result_line: String = "EDIT: %s — %s" % [str(composer.last_edit_report.get("code", "READY")), str(composer.last_edit_report.get("message", ""))]
 		result_line += " | Kontur %s pulau / %s cekungan" % [coast_audit.get("islands", 0), coast_audit.get("holes", 0)]
 		var link_count: int = island.connectors.size() - island.connectors.count(0)
-		status_label.text = "NUSANTARA • WORLD LAB 46 / COAST RING STUDY\nDenah %s×%s | darat %s | air %s | terjun %s | konektor %s\nKlik kiri: naik  | kanan: turun  | Shift+kiri: sungai\nAlt+kiri: tanah  | Ctrl+kiri: dekor (layer 2)\n[T] edit topologi %s: kiri → LAUT, kanan → DARAT | [U] brush %s\n[O] ukir bibir luar %s: kiri → teluk, kanan → pulihkan\n%s\n%s\n%s\n%s\n[WASD] gerak   [Ctrl+S] simpan   [L] muat   [1]–[4] denah\n[V] zona %s   [C] aktor %s   [F] arus %s   [M] mode\n%s\n%s\n%s" % [island.width, island.depth, island.land_mask.count(1), island.water.count(1), island.waterfall_edge_count(), link_count, "ON" if land_mask_edit_mode else "OFF", "3×3" if land_mask_brush_radius == 1 else "1×1", "ON" if coast_sculpt_mode else "OFF", rule_line, access_line, ground_line, result_line, "ON" if show_zone_overlay else "OFF", "ON" if use_physics_actor else "OFF", "ON" if enable_current else "OFF", probe_info, locomotion_info, rig_info]
+		status_label.text = "NUSANTARA • WORLD LAB 48 / RE REGION DIAGNOSTIC\nDenah %s×%s | darat %s | air %s | terjun %s | konektor %s\nKlik kiri: naik  | kanan: turun  | Shift+kiri: sungai\nAlt+kiri: tanah  | Ctrl+kiri: dekor (layer 2)\n[T] edit topologi %s: kiri → LAUT, kanan → DARAT | [U] brush %s\n[O] ukir bibir luar %s: kiri → teluk, kanan → pulihkan\n%s\n%s\n%s\n%s\n[WASD] gerak   [Ctrl+S] simpan   [L] muat   [1]–[4] denah\n[V] zona %s   [C] aktor %s   [F] arus %s   [M] mode\n[J] peta RE %s  [H] mode %s | input sintetis, bukan izin gameplay\n%s\n%s\n%s" % [island.width, island.depth, island.land_mask.count(1), island.water.count(1), island.waterfall_edge_count(), link_count, "ON" if land_mask_edit_mode else "OFF", "3×3" if land_mask_brush_radius == 1 else "1×1", "ON" if coast_sculpt_mode else "OFF", rule_line, access_line, ground_line, result_line, "ON" if show_zone_overlay else "OFF", "ON" if use_physics_actor else "OFF", "ON" if enable_current else "OFF", "ON" if show_region_diagnostic else "OFF", region_diagnostic_mode, probe_info, locomotion_info, rig_info]
 
 
 func _create_physics_actor() -> void:

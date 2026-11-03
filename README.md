@@ -1,4 +1,6 @@
-# Nusantara World Lab — Sprint 47 (RE Terrain Region Reference)
+# Nusantara World Lab — Sprint 48 (RE Region Diagnostic Overlay)
+
+**Sprint 48:** [`SPRINT48_RE_OVERLAY_REPORT.md`](SPRINT48_RE_OVERLAY_REPORT.md) documents a read-only RE-inspired region diagnostic panel, **J** to toggle and **H** to compare base/overlay modes. Two CPU previews (`s48_region_cpu_mode0.png`, `s48_region_cpu_mode1.png`) visualize the same fixture; they are *not* Godot renderer captures. Live screenshot script: `tests/capture_sprint48.gd`. Existing gameplay terrain editing and collision rules are unchanged.
 
 **Sprint 47:** [`SPRINT47_RE_REGION_REPORT.md`](SPRINT47_RE_REGION_REPORT.md) documents a new bounded reference model of the RE region-height checker, bit2/bit6 rectangle mutation, and navigation-byte decoder. It includes a Godot test (`tests/test_re_terrain_region.gd`) but does **not** change gameplay collision or placement permissions. The test still requires a Godot 4.7+ runtime for execution.
 
