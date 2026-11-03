@@ -6,6 +6,10 @@ extends RefCounted
 const EDGE_INFLUENCE: float = 1.90
 const FIRST_AMPLITUDE: float = 0.34
 const SECOND_AMPLITUDE: float = 0.135
+## A mesh vertex on the authored outer coast may move beyond the original
+## rectangular grid. Keep the shoreline test's initial guard wide enough to
+## include sculpt inset + both harmonics + the mask-seam contribution.
+const OUTER_WARP_GUARD: float = 2.40
 
 ## Sprint 36/37: nearby actual shoreline segments indexed in tile-size bins.
 ## Rebuilt when topology, river suppression or edge sculpt changes. The cache
@@ -17,6 +21,8 @@ static var _shore_segments_by_bin: Dictionary = {}
 
 
 static func prepare_shoreline_cache(island: IslandDefinition) -> void:
+	if _shore_cache_instance == island.get_instance_id() and _shore_cache_revision == island.coastline_revision:
+		return
 	_shore_cache_instance = island.get_instance_id()
 	_shore_cache_revision = island.coastline_revision
 	_shore_cache_has_holes = island.land_mask.count(0) > 0
@@ -239,11 +245,15 @@ static func on_island(island: IslandDefinition, x: float, z: float) -> bool:
 	# Cliff/river collision still performs the authoritative vertical test.
 	var w: float = float(island.width) * IslandDefinition.TILE_SIZE
 	var d: float = float(island.depth) * IslandDefinition.TILE_SIZE
-	if x < 0.0 or z < 0.0 or x >= w or z >= d:
+	if x < -OUTER_WARP_GUARD or z < -OUTER_WARP_GUARD or x > w + OUTER_WARP_GUARD or z > d + OUTER_WARP_GUARD:
 		return false
 	var tile: float = IslandDefinition.TILE_SIZE
-	var cell_x: int = floori(x / tile)
-	var cell_z: int = floori(z / tile)
+	# Clamp ONLY the logical mask lookup. Use the original, unclamped world
+	# coordinates for analytic edges below. Previously the unconditional
+	# x<0/x>=w early return cut off valid warped beach triangles, leaving
+	# a thin collision/SDF disagreement along outward-facing coasts.
+	var cell_x: int = clampi(floori(x / tile), 0, island.width - 1)
+	var cell_z: int = clampi(floori(z / tile), 0, island.depth - 1)
 	if not island.is_land(cell_x, cell_z):
 		# These tiny patches are actual ground triangles in TerrainBuilder and
 		# use its WorldCollision. The SDF and traversal must agree with them.
@@ -251,6 +261,15 @@ static func on_island(island: IslandDefinition, x: float, z: float) -> bool:
 			if TerrainBuilder.on_concave_fillet(island, cell_x, cell_z, corner, Vector2(x, z)):
 				return true
 		return false
+	if x < 0.0 or z < 0.0 or x >= w or z >= d:
+		# Clamp only each boundary's along-parameter. At a displaced corner,
+		# both outer-axis inequalities still need to hold simultaneously.
+		var along_z: float = clampf(z, 0.0, d)
+		var along_x: float = clampf(x, 0.0, w)
+		return (x >= boundary_at(island, 0, along_z) - 0.015
+			and x <= boundary_at(island, 1, along_z) + 0.015
+			and z >= boundary_at(island, 2, along_x) - 0.015
+			and z <= boundary_at(island, 3, along_x) + 0.015)
 	# Convex topological corners use the same shared rounding envelope as
 	# TerrainBuilder. Gameplay must not walk across a visually cut-off corner.
 	for corner in range(4):

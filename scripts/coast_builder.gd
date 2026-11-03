@@ -9,6 +9,14 @@ const PROFILE_SAMPLES: int = 512
 const MASK_SDF_SAMPLES: int = 256
 const GEOMETRIC_SDF_BLEND_START: float = 2.10
 const GEOMETRIC_SDF_BLEND_END: float = 3.85
+## Reuse expensive coast textures for the same island/revision. The revision
+## changes for actual topology/shore/river/height mutations, not no-op writes.
+static var _profile_cache_instance: int = -1
+static var _profile_cache_revision: int = -1
+static var _profile_cache: ImageTexture
+static var _sdf_cache_instance: int = -1
+static var _sdf_cache_revision: int = -1
+static var _sdf_cache: ImageTexture
 
 const OCEAN_SHADER: String = """
 shader_type spatial;
@@ -20,6 +28,7 @@ uniform float use_coast_sdf = 0.0;
 uniform float sea_margin = 9.0;
 uniform float breaker_strength : hint_range(0.0, 2.0) = 1.0;
 uniform float wave_temporal_scale : hint_range(0.1, 3.0) = 1.0;
+uniform float surf_train_rate : hint_range(0.03, 0.30) = 0.115;
 varying vec2 world_point;
 
 float hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
@@ -27,6 +36,17 @@ float noise21(vec2 p) {
 	vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
 	return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), u.x),
 		mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+// One finite wave train moving from offshore toward shore. The envelope
+// goes to zero at both ends of its cycle; wrapping fract() is therefore
+// invisible instead of creating a popping/discontinuous full-length ribbon.
+float surf_train(float progress, float distance_to_shore, float curvature) {
+	float center = mix(2.38, 0.18, progress) + curvature;
+	float width = mix(0.14, 0.30, progress);
+	float crest = exp(-pow((distance_to_shore - center) / width, 2.0));
+	float birth = smoothstep(0.01, 0.17, progress);
+	float break_up = 1.0 - smoothstep(0.79, 0.99, progress);
+	return crest * birth * break_up;
 }
 void vertex() {
 	world_point = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
@@ -63,15 +83,18 @@ void fragment() {
 	float fracture = smoothstep(0.34, 0.73, patches + 0.13 * streak);
 	float shore_shift = 0.12 * sin(dot(p, tangent) * 1.23 + t * 0.63)
 		+ 0.11 * (streak - 0.5);
-	// Two distinct wave trains. A moving broken crest and its fading backwash
-	// avoid constant repeated single-pixel ribbons across the entire beach.
-	float advancing = 0.27 + 0.23 * sin(t * 0.86 + streak * 1.4) + shore_shift;
-	float returning = 0.79 + 0.17 * sin(t * 0.61 + 2.7 + chop) + shore_shift * 0.56;
-	float front = exp(-pow((water_distance - advancing) / 0.16, 2.0));
-	float backwash = exp(-pow((water_distance - returning) / 0.29, 2.0));
+	// Sprint 50: two staggered, finite-duration breaker fronts advance from
+	// offshore to shore. The 0.5 offset avoids both fronts resetting together.
+	float phase_variation = 0.035 * sin(dot(p, tangent) * 0.61) + 0.035 * (streak - 0.5);
+	float progress = fract(t * surf_train_rate + phase_variation);
+	float front = surf_train(progress, water_distance, shore_shift);
+	float companion = surf_train(fract(progress + 0.5), water_distance, shore_shift * 0.76);
+	float post_break = smoothstep(0.66, 0.83, progress) * (1.0 - smoothstep(0.95, 1.0, progress));
+	float returning = mix(0.14, 0.94, smoothstep(0.71, 0.98, progress));
+	float backwash = exp(-pow((water_distance - returning) / 0.35, 2.0)) * post_break;
 	float side = smoothstep(0.02, 0.13, water_distance);
-	float foam = side * near_shore * (front * (0.11 + 0.89 * fracture)
-		+ 0.30 * backwash * smoothstep(0.49, 0.81, streak));
+	float foam = side * near_shore * ((front + 0.72 * companion) * (0.14 + 0.86 * fracture)
+		+ 0.27 * backwash * smoothstep(0.49, 0.81, streak));
 	foam += 0.16 * side * near_shore * (1.0 - smoothstep(0.0, 0.21, water_distance)) * fracture;
 	foam *= breaker_strength;
 	ALBEDO = mix(vec3(0.038, 0.19, 0.31), vec3(0.065, 0.35, 0.39), near_shore * 0.65)
@@ -123,6 +146,8 @@ static func build_world(island: IslandDefinition) -> Node3D:
 
 
 static func make_shoreline_texture(island: IslandDefinition) -> ImageTexture:
+	if _profile_cache != null and _profile_cache_instance == island.get_instance_id() and _profile_cache_revision == island.coastline_revision:
+		return _profile_cache
 	# Baked from the exact CoastContour CPU boundaries: no duplicated shader
 	# noise parameters, tile phase, wet-outlet suppression or editor offsets.
 	var w: float = float(island.width) * IslandDefinition.TILE_SIZE
@@ -135,10 +160,15 @@ static func make_shoreline_texture(island: IslandDefinition) -> ImageTexture:
 			CoastContour.boundary_at(island, 1, t * d),
 			CoastContour.boundary_at(island, 2, t * w),
 			CoastContour.boundary_at(island, 3, t * w)))
-	return ImageTexture.create_from_image(image)
+	_profile_cache = ImageTexture.create_from_image(image)
+	_profile_cache_instance = island.get_instance_id()
+	_profile_cache_revision = island.coastline_revision
+	return _profile_cache
 
 
 static func make_signed_coast_texture(island: IslandDefinition) -> ImageTexture:
+	if _sdf_cache != null and _sdf_cache_instance == island.get_instance_id() and _sdf_cache_revision == island.coastline_revision:
+		return _sdf_cache
 	# Sprint 34: exact separable Euclidean distance to the rasterized shoreline.
 	# A chamfer approximation underestimated diagonal clearance and distorted
 	# surf ribbons at diagonal bays. Raster occupancy and movement use the
@@ -201,7 +231,10 @@ static func make_signed_coast_texture(island: IslandDefinition) -> ImageTexture:
 				var weight: float = 1.0 - smoothstep(GEOMETRIC_SDF_BLEND_START, GEOMETRIC_SDF_BLEND_END, edge_distance)
 				edge_distance = lerpf(edge_distance, geometric_distance, weight)
 			image.set_pixel(x, z, Color(-edge_distance if flags[index] != 0 else edge_distance, 0.0, 0.0))
-	return ImageTexture.create_from_image(image)
+	_sdf_cache = ImageTexture.create_from_image(image)
+	_sdf_cache_instance = island.get_instance_id()
+	_sdf_cache_revision = island.coastline_revision
+	return _sdf_cache
 
 
 static func _edt_1d(input: PackedFloat32Array, spacing: float) -> PackedFloat32Array:

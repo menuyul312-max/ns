@@ -72,7 +72,10 @@ func coast_inset_at(side: int, along_world: float) -> float:
 func set_coast_inset(side: int, index: int, inward_units: float) -> bool:
 	if side < 0 or side > 3 or index <= 0 or index >= shore_profiles[side].size() - 1:
 		return false
-	shore_profiles[side][index] = clampf(inward_units, 0.0, 1.10)
+	var next_inset: float = clampf(inward_units, 0.0, 1.10)
+	if is_equal_approx(shore_profiles[side][index], next_inset):
+		return true
+	shore_profiles[side][index] = next_inset
 	coastline_revision += 1
 	return true
 
@@ -88,6 +91,8 @@ func is_land(x: int, z: int) -> bool:
 func set_land(x: int, z: int, enabled: bool) -> void:
 	assert(contains(x, z))
 	var index: int = z * width + x
+	if (land_mask[index] != 0) == enabled:
+		return
 	land_mask[index] = 1 if enabled else 0
 	coastline_revision += 1
 	if not enabled:
@@ -110,7 +115,10 @@ func height_at(x: int, z: int) -> int:
 func set_height(x: int, z: int, height_level: int) -> void:
 	assert(is_land(x, z))
 	assert(height_level >= 0 and height_level <= 5)
-	levels[z * width + x] = height_level
+	var index: int = z * width + x
+	if levels[index] == height_level:
+		return
+	levels[index] = height_level
 	coastline_revision += 1
 
 
@@ -120,7 +128,10 @@ func is_water(x: int, z: int) -> bool:
 
 func set_water(x: int, z: int, enabled: bool) -> void:
 	assert(is_land(x, z))
-	water[z * width + x] = 1 if enabled else 0
+	var index: int = z * width + x
+	if (water[index] != 0) == enabled:
+		return
+	water[index] = 1 if enabled else 0
 	coastline_revision += 1
 
 

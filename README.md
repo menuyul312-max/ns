@@ -1,4 +1,6 @@
-# Nusantara World Lab — Sprint 48 (RE Region Diagnostic Overlay)
+# Nusantara World Lab — Sprint 52 (Godot CI, Coast Mask, Moving Surf)
+
+**Sprints 49–52:** [`SPRINT49_52_REPORT.md`](SPRINT49_52_REPORT.md) describes a fix for outward-warped beach membership, two propagating coastal foam fronts, revision-based SDF texture caching and a GitHub Actions workflow to produce real Godot renderer captures and execute GDScript regression tests. Until a workflow run succeeds, **only** the `s50_surf_train_cpu_frames.png` diagram is available for the new wave model. It is not an actual engine capture.
 
 **Sprint 48:** [`SPRINT48_RE_OVERLAY_REPORT.md`](SPRINT48_RE_OVERLAY_REPORT.md) documents a read-only RE-inspired region diagnostic panel, **J** to toggle and **H** to compare base/overlay modes. Two CPU previews (`s48_region_cpu_mode0.png`, `s48_region_cpu_mode1.png`) visualize the same fixture; they are *not* Godot renderer captures. Live screenshot script: `tests/capture_sprint48.gd`. Existing gameplay terrain editing and collision rules are unchanged.
 

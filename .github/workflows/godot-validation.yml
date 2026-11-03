@@ -1,0 +1,65 @@
+name: Godot validation and island captures
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "tests/**"
+      - "scenes/**"
+      - "project.godot"
+      - ".github/workflows/godot-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+      - name: Install virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri
+      - name: Import project and compile GDScript
+        run: godot --headless --path . --editor --import --quit
+      - name: Run offline Python regressions
+        run: python3 -m unittest discover -s tests -p 'test*offline.py' -v
+      - name: Run Godot GDScript tests
+        shell: bash
+        run: |
+          failed=0
+          for script in tests/test_*.gd; do
+            echo "::group::$script"
+            if ! timeout 90s godot --headless --path . --script "res://$script"; then
+              echo "FAILED: $script"
+              failed=$((failed+1))
+            fi
+            echo "::endgroup::"
+          done
+          if ((failed > 0)); then
+            echo "$failed GDScript tests failed"
+            exit 1
+          fi
+      - name: Render actual Godot capture frames
+        if: always()
+        shell: bash
+        run: |
+          xvfb-run -a -s "-screen 0 1600x1000x24" timeout 180s godot --path . --rendering-method gl_compatibility --script res://tests/capture_sprint46.gd
+          xvfb-run -a -s "-screen 0 1600x1000x24" timeout 180s godot --path . --rendering-method gl_compatibility --script res://tests/capture_sprint48.gd
+          xvfb-run -a -s "-screen 0 1600x1000x24" timeout 180s godot --path . --rendering-method gl_compatibility --script res://tests/capture_sprint51_coast.gd
+      - name: Upload engine screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nusantara-godot-captures
+          if-no-files-found: warn
+          path: |
+            s46_godot_*.png
+            s48_godot_*.png
+            s51_godot_*.png
