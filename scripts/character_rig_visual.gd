@@ -5,6 +5,7 @@ extends Node3D
 ## Neither the fallback meshes nor this basic bone mapping are finished art.
 
 const OPTIONAL_GLB_PATH: String = "res://assets/character_nusantara.glb"
+const DEFAULT_PROFILE_PATH: String = NusaRigProfile.HUMANOID
 const ALIASES := {
 	"Root": ["Root", "root", "Hips", "hips", "mixamorig:Hips"],
 	"Spine": ["Spine", "spine", "Spine1", "mixamorig:Spine"],
@@ -20,9 +21,26 @@ var bones: Dictionary = {}
 var source_label: String = "DEBUG SKELETON"
 var imported_glb: bool = false
 var depth_offset: float = 0.0
+var glb_path: String = OPTIONAL_GLB_PATH
+var profile_path: String = DEFAULT_PROFILE_PATH
+var rig_profile: Dictionary = {}
+var rig_report: Dictionary = {}
+var face_controller: NusaFaceController
+var attachment_nodes: Dictionary = {}
+var visual_scale: float = 1.20
+var visual_offset: Vector3 = Vector3(0.0, -0.61, 0.0)
+
+
+func configure_asset(model_path: String, rig_profile_path: String = DEFAULT_PROFILE_PATH,
+		scale_factor: float = 1.20, offset: Vector3 = Vector3(0.0, -0.61, 0.0)) -> void:
+	glb_path = model_path
+	profile_path = rig_profile_path
+	visual_scale = scale_factor
+	visual_offset = offset
 
 
 func setup() -> void:
+	rig_profile = NusaRigProfile.load_profile(profile_path)
 	if not _try_import_glb():
 		_build_proxy()
 
@@ -35,9 +53,9 @@ func set_waterline(depth: float, wet: bool, delta: float) -> void:
 
 
 func _try_import_glb() -> bool:
-	if not ResourceLoader.exists(OPTIONAL_GLB_PATH):
+	if not ResourceLoader.exists(glb_path):
 		return false
-	var resource: Resource = load(OPTIONAL_GLB_PATH)
+	var resource: Resource = load(glb_path)
 	if not resource is PackedScene:
 		push_warning("Character GLB was not imported as PackedScene; using test rig")
 		return false
@@ -47,27 +65,35 @@ func _try_import_glb() -> bool:
 		scene.free()
 		push_warning("GLB has no Skeleton3D; using test rig")
 		return false
-	var mapping: Dictionary = map_bones(found)
-	for required in ["Root", "Spine", "Head", "Arm_L", "Arm_R", "Leg_L", "Leg_R"]:
-		if not mapping.has(required):
-			scene.free()
-			push_warning("GLB lacks bone role %s; using test rig" % required)
-			return false
+	var report: Dictionary = NusaRigProfile.inspect(found, rig_profile)
+	if not bool(report["valid"]):
+		scene.free()
+		push_warning("GLB rig incompatible with %s: %s %s" % [profile_path,
+			str(report["missing_required"]), str(report["hierarchy_errors"])])
+		return false
 	add_child(scene)
 	scene.name = "ImportedNusantaraGLB"
 	if scene is Node3D:
-		# Uploaded chibi is approximately 1.0 unit tall, with feet at its origin.
-		# The actor's capsule center is roughly 0.62 above the floor.
-		(scene as Node3D).scale = Vector3.ONE * 1.20
-		(scene as Node3D).position = Vector3(0.0, -0.61, 0.0)
+		# Kept configurable: a new character must not inherit an unrelated
+		# chibi's scale or capsule/feet calibration by accident.
+		(scene as Node3D).scale = Vector3.ONE * visual_scale
+		(scene as Node3D).position = visual_offset
 	skeleton = found
-	bones = mapping
+	bones = report["mapped"]
+	rig_report = report
 	imported_glb = true
 	source_label = "IMPORTED GLB"
+	face_controller = NusaFaceController.new()
+	face_controller.name = "NusaFaceController"
+	add_child(face_controller)
+	face_controller.setup(scene)
 	return true
 
 
 static func map_bones(rig: Skeleton3D) -> Dictionary:
+	var profile: Dictionary = NusaRigProfile.load_profile()
+	if not profile.is_empty():
+		return NusaRigProfile.inspect(rig, profile)["mapped"]
 	var mapping: Dictionary = {}
 	for role in ALIASES.keys():
 		for alias in ALIASES[role]:
@@ -76,6 +102,34 @@ static func map_bones(rig: Skeleton3D) -> Dictionary:
 				mapping[role] = rig.get_bone_name(bone_index)
 				break
 	return mapping
+
+
+func attach_module(socket_name: String, module_scene: PackedScene,
+		local_pose: Transform3D = Transform3D.IDENTITY) -> bool:
+	if skeleton == null or module_scene == null:
+		return false
+	var bone: String = NusaRigProfile.bone_for_socket(bones, rig_profile, socket_name)
+	if bone.is_empty():
+		return false
+	if attachment_nodes.has(socket_name):
+		(attachment_nodes[socket_name] as Node).queue_free()
+	var attachment := BoneAttachment3D.new()
+	attachment.name = "Module_" + socket_name
+	attachment.bone_name = StringName(bone)
+	skeleton.add_child(attachment)
+	var module: Node = module_scene.instantiate()
+	if not module is Node3D:
+		attachment.queue_free()
+		module.free()
+		return false
+	attachment.add_child(module)
+	(module as Node3D).transform = local_pose
+	attachment_nodes[socket_name] = attachment
+	return true
+
+
+func set_expression(name: String, duration: float = 0.15) -> bool:
+	return face_controller != null and face_controller.set_expression(name, duration)
 
 
 func _find_skeleton(candidate: Node) -> Skeleton3D:
@@ -89,6 +143,7 @@ func _find_skeleton(candidate: Node) -> Skeleton3D:
 
 
 func _build_proxy() -> void:
+	rig_report = {"valid": false, "source": "debug_proxy", "reason": "GLB missing or incompatible"}
 	skeleton = Skeleton3D.new()
 	skeleton.name = "NusantaraSkeleton"
 	add_child(skeleton)

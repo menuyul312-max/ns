@@ -1,5 +1,7 @@
 # Kontrak GLB untuk Nusantara World Lab 09
 
+**Dokumentasi mutakhir:** [`Nusa Character Base Kit v1`](../NUSA_CHARACTER_KIT_V1.md) menjelaskan profil rig modular, ekspresi wajah, soket, katalog animasi 16 klip, dan audit/transfer skin. Bagian Sprint 09 di bawah merupakan catatan historis.
+
 `character_nusantara.glb` adalah salinan **model karakter milik pengguna** `Chibi_Gray_T_Pose_Clay_Model_s3.glb` yang sebelumnya diunggah dalam proyek mekanik karakter. Ini bukan aset Animal Crossing ataupun model Nintendo. Sebelum mendistribusikan game ke publik, pastikan lisensi dan hak atas semua model, tekstur, serta animasinya.
 
 Godot mengimpor file ini sebagai `PackedScene`. `CharacterRigVisual` mencari `Skeleton3D` secara rekursif, lalu memetakan peran berikut:
@@ -29,5 +31,5 @@ Jika GLB tidak tersedia atau pemetaan tujuh peran gagal, proyek akan menampilkan
 ## Keterbatasan
 
 - Rotasi bahu dari T-pose diturunkan lewat offset statis. Kulit dan orientasi tulang yang berbeda membutuhkan kalibrasi rest pose per model.
-- Empat klip demo masih dihasilkan dari sinus periodik; belum ada ayunan natural tangan, siklus kaki yang sinkron dengan jarak tempuh, root motion, foot IK, atau deformasi kain.
+- Katalog telah diperluas menjadi 16 klip prosedural dan foot IK untuk posisi berdiri; klip tersebut belum setara animasi produksi, bukan gait berbasis jarak tempuh atau root motion penuh, dan belum mendukung deformasi kain.
 - Skinned mesh sudah dipakai, tetapi ini bukan bukti retopologi, skin weighting, ataupun animasi produksi sudah layak.

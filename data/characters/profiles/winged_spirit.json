@@ -1,0 +1,15 @@
+{
+  "id": "nusa_winged_spirit_v1",
+  "extends": "animal_biped",
+  "description": "Winged biped only; quadruped dragons require their own root and leg template",
+  "required_roles": ["Wing_L", "Wing_R"],
+  "optional_roles": ["WingTip_L", "WingTip_R", "Scarf"],
+  "aliases": {
+    "Wing_L": ["Wing_L", "LeftWing", "wing.L"],
+    "Wing_R": ["Wing_R", "RightWing", "wing.R"],
+    "WingTip_L": ["WingTip_L", "LeftWingTip"],
+    "WingTip_R": ["WingTip_R", "RightWingTip"],
+    "Scarf": ["Scarf", "Selendang"]
+  },
+  "sockets": {"wing_left": ["Wing_L"], "wing_right": ["Wing_R"], "scarf": ["Scarf", "Chest"]}
+}

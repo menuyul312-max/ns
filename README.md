@@ -1,5 +1,7 @@
 # Nusantara World Lab — Sprint 54 (Stratified Cliffs and Chamfered Lips)
 
+**Nusa Character Base Kit v1:** dokumentasi kontrak skeleton biped/hewan/spirit, 23-bone GLB contoh pengguna, 78 target ekspresi, 16 klip animasi prototipe, socket modul, pemeriksa GLB, dan alat Blender untuk transfer skin terbatas ada di [`NUSA_CHARACTER_KIT_V1.md`](NUSA_CHARACTER_KIT_V1.md). Sumber karakter pengguna dan semua aset Nintendo **tidak disertakan dalam repo**.
+
 **Sprints 53–54:** [`SPRINT53_54_REPORT.md`](SPRINT53_54_REPORT.md) documents layered cliff-wall relief, twelve vertical mesh rows, a slightly more chamfered corner profile and wider gently varied grass lips. `s54_cliff_profile_cpu.png` shows the mathematical before/after cross section, **not** a Godot image. Per user request, the experimental CI workflow from Sprint 52 has now been **removed**; only direct commits to `main` are used.
 
 **Sprints 49–52 (historical):** [`SPRINT49_52_REPORT.md`](SPRINT49_52_REPORT.md) describes a fix for outward-warped beach membership, two propagating coastal foam fronts, and revision-based SDF texture caching. The report also records a CI experiment **since discontinued and removed from the repository**. The `s50_surf_train_cpu_frames.png` diagram is not an engine capture.

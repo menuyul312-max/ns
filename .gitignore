@@ -8,6 +8,16 @@ __pycache__/
 .pytest_cache/
 .venv/
 
+# Character sources from the user's private asset workspace are optional,
+# and must never be pushed into the public code repository by accident.
+assets/character_nusantara.glb
+assets/character_nusantara_*.png
+generated/character_audit/
+
+# This repository's previous sprints did not track generated Godot sidecars.
+*.import
+*.gd.uid
+
 # Local exports, packages, and transient captures.
 *.zip
 *.pck

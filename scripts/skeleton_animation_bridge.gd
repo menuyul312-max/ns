@@ -2,7 +2,8 @@ class_name SkeletonAnimationBridge
 extends Node
 ## AnimationTree clips controlling Skeleton3D bones, not manually rotated pivots.
 
-const CLIPS: Array[String] = ["idle", "walk", "wade", "swim"]
+const CLIPS: Array[String] = ["idle", "walk", "run", "turn", "start_stop", "sit", "wade", "swim"]
+const ACTION_CLIPS: Array[String] = ["shovel", "pickup", "carry", "interact", "watering", "talk", "wave", "clap"]
 const CLIP_LENGTH: float = 1.0
 const SHOVEL_DURATION: float = 1.30
 
@@ -17,6 +18,9 @@ var initialized: bool = false
 var shovel_remaining: float = 0.0
 var shovel_elapsed: float = 0.0
 var shovel_count: int = 0
+var action_node: AnimationNodeAnimation
+var action_remaining: float = 0.0
+var current_action: String = ""
 
 
 func setup(actor: Node3D, target_rig: CharacterRigVisual) -> void:
@@ -33,6 +37,9 @@ func setup(actor: Node3D, target_rig: CharacterRigVisual) -> void:
 	for clip in CLIPS:
 		library.add_animation(clip, _make_clip(actor, clip))
 	library.add_animation("shovel", _make_shovel_clip(actor))
+	for action in ACTION_CLIPS:
+		if action != "shovel":
+			library.add_animation(action, _make_action_clip(actor, action))
 	animation_player.add_animation_library("", library)
 	var machine := AnimationNodeStateMachine.new()
 	for clip in CLIPS:
@@ -49,9 +56,9 @@ func setup(actor: Node3D, target_rig: CharacterRigVisual) -> void:
 	machine.add_transition(&"Start", &"idle", AnimationNodeStateMachineTransition.new())
 	var blend := AnimationNodeBlendTree.new()
 	blend.add_node(&"locomotion", machine, Vector2(0, 120))
-	var shovel := AnimationNodeAnimation.new()
-	shovel.animation = &"shovel"
-	blend.add_node(&"shovel", shovel, Vector2(0, 320))
+	action_node = AnimationNodeAnimation.new()
+	action_node.animation = &"shovel"
+	blend.add_node(&"shovel", action_node, Vector2(0, 320))
 	var shot := AnimationNodeOneShot.new()
 	shot.fadein_time = 0.08
 	shot.fadeout_time = 0.18
@@ -77,17 +84,35 @@ func setup(actor: Node3D, target_rig: CharacterRigVisual) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if action_remaining > 0.0:
+		action_remaining = maxf(0.0, action_remaining - delta)
+		if action_remaining <= 0.0:
+			current_action = ""
 	if shovel_remaining > 0.0:
 		shovel_remaining = maxf(0.0, shovel_remaining - delta)
 		shovel_elapsed = SHOVEL_DURATION - shovel_remaining
 
 
 func fire_shovel() -> bool:
-	if not initialized or shovel_remaining > 0.0:
+	if not initialized or shovel_remaining > 0.0 or action_remaining > 0.0:
 		return false
+	action_node.animation = &"shovel"
 	shovel_remaining = SHOVEL_DURATION
 	shovel_elapsed = 0.0
 	shovel_count += 1
+	animation_tree.set("parameters/action/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	return true
+
+
+func fire_action(action_name: String) -> bool:
+	var name: String = action_name.to_lower()
+	if name == "shovel":
+		return fire_shovel()
+	if not initialized or not ACTION_CLIPS.has(name) or action_remaining > 0.0 or shovel_remaining > 0.0:
+		return false
+	action_node.animation = StringName(name)
+	current_action = name
+	action_remaining = animation_player.get_animation(name).length
 	animation_tree.set("parameters/action/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	return true
 
@@ -128,11 +153,19 @@ func _make_clip(actor: Node3D, clip_name: String) -> Animation:
 					match clip_name:
 						"idle": degrees = 0.012 * cycle
 						"walk": degrees = 0.54 * cycle
+						"run": degrees = 0.83 * cycle
+						"turn": degrees = 0.16 * cycle
+						"start_stop": degrees = 0.32 * cycle * (1.0 - moment)
+						"sit": degrees = -0.16
 						"wade": degrees = 0.28 * cycle
 						"swim": degrees = 0.79 * cycle
 				"Leg_L", "Leg_R":
 					match clip_name:
 						"walk": degrees = -0.56 * cycle
+						"run": degrees = -0.89 * cycle
+						"turn": degrees = -0.11 * cycle
+						"start_stop": degrees = -0.24 * cycle * (1.0 - moment)
+						"sit": degrees = -0.90
 						"wade": degrees = -0.24 * cycle
 						"swim": degrees = -0.43 * cycle
 				"Head":
@@ -158,6 +191,57 @@ func _make_clip(actor: Node3D, clip_name: String) -> Animation:
 				quaternion = skeleton.get_bone_rest(bone_index).basis.get_rotation_quaternion() * quaternion
 			animation.rotation_track_insert_key(track, moment, quaternion)
 	return animation
+
+
+func _make_action_clip(actor: Node3D, action_name: String) -> Animation:
+	# Reusable, deliberately simple blocking passes. Detailed studio-quality
+	# arcs, hand IK and costume simulation remain per-character art tasks.
+	var clip := Animation.new()
+	clip.length = 1.0
+	clip.loop_mode = Animation.LOOP_NONE
+	var path: String = str(actor.get_path_to(skeleton))
+	var phases: Array[float] = [0.0, 0.2, 0.45, 0.7, 1.0]
+	for role in ["Arm_L", "Arm_R", "Forearm_L", "Forearm_R", "Spine", "Head"]:
+		if not bone_names.has(role):
+			continue
+		var track: int = clip.add_track(Animation.TYPE_ROTATION_3D)
+		clip.track_set_path(track, NodePath(path + ":" + str(bone_names[role])))
+		for step in range(phases.size()):
+			var envelope: float = [0.0, 0.6, 1.0, 0.75, 0.0][step]
+			var pitch: float = 0.0
+			var lift: float = 0.0
+			match action_name:
+				"pickup":
+					if role == "Spine": pitch = -0.38 * envelope
+					elif role.begins_with("Arm_"): pitch = 0.70 * envelope
+				"carry":
+					if role.begins_with("Arm_"): pitch = -0.60 * envelope
+					elif role.begins_with("Forearm_"): pitch = -0.40 * envelope
+				"interact":
+					if role == "Arm_R": pitch = -0.65 * envelope
+				"watering":
+					if role == "Arm_R": pitch = -0.93 * envelope
+					elif role == "Spine": pitch = -0.16 * envelope
+				"talk":
+					if role == "Arm_R": pitch = -0.22 * envelope
+					elif role == "Head": pitch = 0.10 * envelope
+				"wave":
+					if role == "Arm_R":
+						pitch = -0.35 * envelope
+						lift = -1.20 * envelope
+					elif role == "Forearm_R": pitch = 0.38 * sin(phases[step] * TAU * 2.0) * envelope
+				"clap":
+					if role.begins_with("Arm_"): pitch = -0.52 * envelope
+					if role == "Arm_L": lift = 0.48 * envelope
+					if role == "Arm_R": lift = -0.48 * envelope
+			var pose: Quaternion = Quaternion(Vector3.FORWARD, lift) * Quaternion(Vector3.RIGHT, pitch)
+			if imported_rig and role.begins_with("Arm_"):
+				pose = Quaternion(Vector3.FORWARD, 1.22 if role == "Arm_L" else -1.22) * pose
+			if imported_rig:
+				var bone_idx: int = skeleton.find_bone(str(bone_names[role]))
+				pose = skeleton.get_bone_rest(bone_idx).basis.get_rotation_quaternion() * pose
+			clip.rotation_track_insert_key(track, phases[step], pose)
+	return clip
 
 
 func _make_shovel_clip(actor: Node3D) -> Animation:

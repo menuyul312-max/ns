@@ -23,10 +23,13 @@ func setup(parent_actor: RiverCharacter, visual: CharacterRigVisual) -> void:
 	name = "FootGroundTargets"
 	for side in ["left", "right"]:
 		var aliases: Array[String] = []
+		var logical_role: String = "Foot_L" if side == "left" else "Foot_R"
+		if visual.bones.has(logical_role):
+			aliases.append(str(visual.bones[logical_role]))
 		if side == "left":
-			aliases.assign(["LeftFoot", "Foot_L", "LeftAnkle", "Leg_L"])
+			aliases.append_array(["LeftFoot", "Foot_L", "LeftAnkle", "Leg_L"])
 		else:
-			aliases.assign(["RightFoot", "Foot_R", "RightAnkle", "Leg_R"])
+			aliases.append_array(["RightFoot", "Foot_R", "RightAnkle", "Leg_R"])
 		for candidate in aliases:
 			var index: int = skeleton.find_bone(candidate)
 			if index >= 0:

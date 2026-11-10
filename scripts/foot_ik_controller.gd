@@ -28,7 +28,9 @@ func setup(parent_actor: RiverCharacter, visual: CharacterRigVisual, source: Foo
 		return
 	for side in SIDES:
 		var prefix: String = "Left" if side == "left" else "Right"
-		var bone_names: Array[String] = [prefix + "UpperLeg", prefix + "LowerLeg", prefix + "Foot"]
+		var suffix: String = "L" if side == "left" else "R"
+		var bone_names: Array[String] = [str(rig.bones.get("Leg_" + suffix, "")),
+			str(rig.bones.get("Shin_" + suffix, "")), str(rig.bones.get("Foot_" + suffix, ""))]
 		var has_bones: bool = true
 		for bone_name in bone_names:
 			if rig.skeleton.find_bone(bone_name) < 0:
@@ -85,7 +87,7 @@ func _physics_process(_delta: float) -> void:
 			# 0.3 m leg: avoid IK stretching/snap across cliff edges.
 			if absf(desired.y - foot_world.y) <= MAX_STEP_DELTA:
 				(targets[side] as Node3D).global_position = desired
-				var knee_index: int = rig.skeleton.find_bone("LeftLowerLeg" if side == "left" else "RightLowerLeg")
+				var knee_index: int = rig.skeleton.find_bone(str(rig.bones.get("Shin_L" if side == "left" else "Shin_R", "")))
 				var knee_world: Vector3 = rig.skeleton.to_global(rig.skeleton.get_bone_global_pose(knee_index).origin)
 				# Pole follows the actor's facing direction to keep knee bend stable.
 				var pole_forward: Vector3 = actor.mesh_root.global_transform.basis * Vector3(0.0, 0.0, 1.0)

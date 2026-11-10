@@ -1,0 +1,13 @@
+{
+  "id": "nusa_animal_biped_v1",
+  "extends": "humanoid",
+  "description": "Biped core with optional muzzle, ear and tail roles for Komo and villagers",
+  "optional_roles": ["Ear_L", "Ear_R", "Tail", "Muzzle"],
+  "aliases": {
+    "Ear_L": ["Ear_L", "LeftEar", "ear.L"],
+    "Ear_R": ["Ear_R", "RightEar", "ear.R"],
+    "Tail": ["Tail", "TailBase", "tail.001"],
+    "Muzzle": ["Muzzle", "Snout"]
+  },
+  "sockets": {"ear_left": ["Ear_L", "Head"], "ear_right": ["Ear_R", "Head"], "tail": ["Tail", "Root"]}
+}

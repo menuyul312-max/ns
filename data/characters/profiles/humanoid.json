@@ -1,0 +1,37 @@
+{
+  "id": "nusa_humanoid_v1",
+  "description": "Original human/anthropomorphic biped foundation, T-pose, no clothes or gender marker",
+  "required_roles": ["Root", "Spine", "Head", "Arm_L", "Arm_R", "Leg_L", "Leg_R"],
+  "optional_roles": ["Chest", "Neck", "Jaw", "Shoulder_L", "Shoulder_R", "Forearm_L", "Forearm_R", "Hand_L", "Hand_R", "Shin_L", "Shin_R", "Foot_L", "Foot_R", "Toe_L", "Toe_R"],
+  "aliases": {
+    "Root": ["Hips", "Root", "root", "mixamorig:Hips"],
+    "Spine": ["Spine", "spine", "Spine1", "mixamorig:Spine"],
+    "Chest": ["UpperChest", "Chest", "mixamorig:Spine2"],
+    "Neck": ["Neck", "mixamorig:Neck"],
+    "Head": ["Head", "head", "mixamorig:Head"],
+    "Jaw": ["Jaw", "jaw"],
+    "Shoulder_L": ["LeftShoulder", "shoulder.L", "mixamorig:LeftShoulder"],
+    "Shoulder_R": ["RightShoulder", "shoulder.R", "mixamorig:RightShoulder"],
+    "Arm_L": ["LeftUpperArm", "Arm_L", "LeftArm", "upper_arm.L", "mixamorig:LeftArm"],
+    "Arm_R": ["RightUpperArm", "Arm_R", "RightArm", "upper_arm.R", "mixamorig:RightArm"],
+    "Forearm_L": ["LeftLowerArm", "forearm.L", "mixamorig:LeftForeArm"],
+    "Forearm_R": ["RightLowerArm", "forearm.R", "mixamorig:RightForeArm"],
+    "Hand_L": ["LeftHand", "hand.L", "mixamorig:LeftHand"],
+    "Hand_R": ["RightHand", "hand.R", "mixamorig:RightHand"],
+    "Leg_L": ["LeftUpperLeg", "Leg_L", "LeftUpLeg", "thigh.L", "mixamorig:LeftUpLeg"],
+    "Leg_R": ["RightUpperLeg", "Leg_R", "RightUpLeg", "thigh.R", "mixamorig:RightUpLeg"],
+    "Shin_L": ["LeftLowerLeg", "shin.L", "mixamorig:LeftLeg"],
+    "Shin_R": ["RightLowerLeg", "shin.R", "mixamorig:RightLeg"],
+    "Foot_L": ["LeftFoot", "foot.L", "mixamorig:LeftFoot"],
+    "Foot_R": ["RightFoot", "foot.R", "mixamorig:RightFoot"],
+    "Toe_L": ["LeftToes", "toe.L", "mixamorig:LeftToeBase"],
+    "Toe_R": ["RightToes", "toe.R", "mixamorig:RightToeBase"]
+  },
+  "ancestor_rules": [["Root", "Spine"], ["Spine", "Head"], ["Root", "Leg_L"], ["Root", "Leg_R"], ["Spine", "Arm_L"], ["Spine", "Arm_R"]],
+  "sockets": {
+    "head": ["Head"], "hand_left": ["Hand_L", "Arm_L"],
+    "hand_right": ["Hand_R", "Arm_R"], "back": ["Chest", "Spine"],
+    "waist": ["Root"], "foot_left": ["Foot_L", "Leg_L"],
+    "foot_right": ["Foot_R", "Leg_R"]
+  }
+}

@@ -10,7 +10,7 @@ var shaft_pivot: Node3D
 func setup(skeleton: Skeleton3D, bone_roles: Dictionary, parent_actor: RiverCharacter = null) -> void:
 	name = "EquippedShovel"
 	actor = parent_actor
-	var hand: String = "RightHand"
+	var hand: String = str(bone_roles.get("Hand_R", bone_roles.get("Arm_R", "")))
 	if skeleton.find_bone(hand) < 0:
 		hand = str(bone_roles.get("Arm_R", ""))
 	bone_name = StringName(hand)

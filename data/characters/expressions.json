@@ -1,0 +1,13 @@
+{
+  "neutral": {},
+  "blink": {"eyeBlinkLeft": 1.0, "eyeBlinkRight": 1.0},
+  "blink_left": {"eyeBlinkLeft": 1.0},
+  "blink_right": {"eyeBlinkRight": 1.0},
+  "happy": {"happy": 0.8, "mouthSmileLeft": 0.7, "mouthSmileRight": 0.7, "eyeSquintLeft": 0.2, "eyeSquintRight": 0.2},
+  "sad": {"sad": 0.8, "mouthFrownLeft": 0.6, "mouthFrownRight": 0.6, "browInnerUp": 0.4},
+  "angry": {"angry": 0.75, "browDownLeft": 0.7, "browDownRight": 0.7},
+  "surprised": {"surprised": 0.8, "eyeWideLeft": 0.5, "eyeWideRight": 0.5, "jawOpen": 0.45},
+  "talk_a": {"viseme_aa": 0.8, "jawOpen": 0.3},
+  "talk_o": {"viseme_O": 0.9, "mouthFunnel": 0.5},
+  "talk_m": {"viseme_PP": 0.9, "mouthClose": 0.8}
+}
