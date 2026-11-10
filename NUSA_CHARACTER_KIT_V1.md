@@ -113,6 +113,38 @@ python3 -m unittest discover -s tests -p test_character_audit.py
 
 Untuk gambar karakter 3D asli, jalankan `godot --path . --script res://tests/capture_nusa_character_kit.gd` di lingkungan yang memiliki **display renderer**, opsional `NUSA_CAPTURE_DIR=/lokasi/hasil`. `--headless` tidak dapat menghasilkan viewport 3D pada build ini.
 
+## Merender seluruh animasi tanpa display Godot
+
+**Alur:** Godot 4.7 menjalankan animasi asli dari `SkeletonAnimationBridge` dan mengekspor 23 bone poses per frame, Blender menggunakannya untuk *offline CPU skinning/rendering*, kemudian FFmpeg memberi label dan mengemas video/GIF. Ini **bukan tangkapan gameplay Godot**; hasilnya merupakan visualisasi gerak dari klip Godot dan mesh GLB pengguna.
+
+```bash
+# GLB pengguna harus dipasang lokal di assets/character_nusantara.glb
+NUSA_MOTION_SAMPLES=/tmp/nusa_motion_samples.json \
+  godot --headless --path . --script res://tools/export_nusa_animation_samples.gd
+
+blender -b --factory-startup --python tools/render_nusa_motion.py -- \
+  --model assets/character_nusantara.glb \
+  --samples-json /tmp/nusa_motion_samples.json \
+  --output-dir /tmp/nusa_motion_frames --resolution 480 --samples 8 --loops 1
+
+python3 tools/encode_nusa_motion.py \
+  --frames-dir /tmp/nusa_motion_frames \
+  --video /tmp/nusa_16_animasi.mp4 --gif /tmp/nusa_16_animasi.gif
+
+blender -b --factory-startup --python tools/render_nusa_expressions.py -- \
+  --model assets/character_nusantara.glb \
+  --expressions data/characters/expressions.json \
+  --output-dir /tmp/nusa_face_frames --resolution 480 --samples 8
+
+python3 tools/encode_nusa_motion.py --mode face \
+  --frames-dir /tmp/nusa_face_frames \
+  --video /tmp/nusa_11_ekspresi.mp4 --gif /tmp/nusa_11_ekspresi.gif
+```
+
+Rentang yang ditampilkan: `idle, walk, run, turn, start_stop, sit, wade, swim`, disusul `shovel, pickup, carry, interact, watering, talk, wave, clap`. Ekspresi: `neutral, blink, blink_left, blink_right, happy, sad, angry, surprised, talk_a, talk_o, talk_m` lalu kembali ke neutral. Setiap segmen memakai kunci pose Godot/target morph preset **apa adanya**, dengan rendering Blender. Tidak ada gameplay movement/translation atau properti asli yang ditambahkan ke klip untuk mengesankan gerakan lebih lengkap.
+
+**Temuan visual awal:** lipatan bahu dan lengan masih kaku; `sit` baru gerakan leg-blocking, belum menempel pada kursi/ground; `wave`, `clap`, `watering` dan gerakan aksi lainnya masih butuh joint fitting dan props sehingga sulit dibaca pada beberapa frame; morph mata/mulut yang ada pada GLB ini belum memiliki fitur visual wajah yang cukup jelas, dan `jawOpen` menghasilkan deformasi yang kurang sesuai. Semua perlu diperbaiki saat membuat animasi produksi dan asset base baru.
+
 ## Batasan yang tetap perlu dibangun
 
 - Retopologi otomatis khusus ACNH-style/Trellis, fitting armature untuk anatomi berbeda dan validasi *deformation quality* belum selesai.
