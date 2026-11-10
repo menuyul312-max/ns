@@ -1,0 +1,36 @@
+{
+  "id": "nusa_quadruped_v2",
+  "description": "Separate four-legged body contract. Does not inherit biped topology or biped motion clips.",
+  "required_roles": ["Root", "Spine", "Head", "FrontLeg_L", "FrontLeg_R", "HindLeg_L", "HindLeg_R"],
+  "optional_roles": ["Chest", "Neck", "Tail", "TailTip", "Ear_L", "Ear_R", "Wing_L", "Wing_R", "FootFront_L", "FootFront_R", "FootHind_L", "FootHind_R"],
+  "aliases": {
+    "Root": ["Root", "Hips", "Pelvis"],
+    "Spine": ["Spine", "Spine1", "Back"],
+    "Chest": ["Chest", "UpperChest"],
+    "Neck": ["Neck"],
+    "Head": ["Head"],
+    "FrontLeg_L": ["FrontLeg_L", "FrontUpperLeg_L", "Foreleg.L"],
+    "FrontLeg_R": ["FrontLeg_R", "FrontUpperLeg_R", "Foreleg.R"],
+    "HindLeg_L": ["HindLeg_L", "BackUpperLeg_L", "Hindleg.L"],
+    "HindLeg_R": ["HindLeg_R", "BackUpperLeg_R", "Hindleg.R"],
+    "FootFront_L": ["FrontFoot_L", "Forefoot.L"],
+    "FootFront_R": ["FrontFoot_R", "Forefoot.R"],
+    "FootHind_L": ["HindFoot_L", "Hindfoot.L"],
+    "FootHind_R": ["HindFoot_R", "Hindfoot.R"],
+    "Tail": ["Tail", "TailBase"],
+    "TailTip": ["TailTip", "TailEnd"],
+    "Ear_L": ["Ear_L", "LeftEar"],
+    "Ear_R": ["Ear_R", "RightEar"],
+    "Wing_L": ["Wing_L", "LeftWing"],
+    "Wing_R": ["Wing_R", "RightWing"]
+  },
+  "ancestor_rules": [["Root", "Spine"], ["Spine", "Head"], ["Root", "HindLeg_L"], ["Root", "HindLeg_R"], ["Root", "FrontLeg_L"], ["Root", "FrontLeg_R"]],
+  "sockets": {
+    "head": ["Head"], "back": ["Spine"], "tail": ["Tail", "Root"],
+    "wing_left": ["Wing_L"], "wing_right": ["Wing_R"],
+    "front_foot_left": ["FootFront_L", "FrontLeg_L"],
+    "front_foot_right": ["FootFront_R", "FrontLeg_R"],
+    "hind_foot_left": ["FootHind_L", "HindLeg_L"],
+    "hind_foot_right": ["FootHind_R", "HindLeg_R"]
+  }
+}

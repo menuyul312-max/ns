@@ -10,6 +10,7 @@ var presets: Dictionary = {}
 var target_weights: Dictionary = {}
 var current_expression: String = "neutral"
 var transition_speed: float = 8.0
+var suppress_mouth_morphs: bool = false
 
 
 func setup(model_root: Node, expressions_path: String = DEFAULT_EXPRESSIONS) -> void:
@@ -44,6 +45,8 @@ func set_expression(expression: String, seconds: float = 0.15) -> bool:
 	target_weights.clear()
 	var preset: Dictionary = presets[expression]
 	for name in preset:
+		if suppress_mouth_morphs and (str(name).begins_with("mouth") or str(name).begins_with("viseme") or str(name).begins_with("jaw")):
+			continue
 		if shapes.has(str(name)):
 			target_weights[str(name)] = clampf(float(preset[name]), 0.0, 1.0)
 	set_process(true)

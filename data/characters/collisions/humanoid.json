@@ -1,0 +1,13 @@
+{
+  "id": "nusa_humanoid_collision_v2",
+  "description": "Authoritative gameplay capsule; independent of limbs and face mesh",
+  "radius": 0.22,
+  "height": 1.24,
+  "foot_offset": 0.62,
+  "body_layer": 4,
+  "world_mask": 49,
+  "interaction_radius": 0.62,
+  "interaction_forward": 0.44,
+  "interaction_height": 0.24,
+  "interaction_mask": 16
+}

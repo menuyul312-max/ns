@@ -6,6 +6,7 @@ extends Node3D
 
 const OPTIONAL_GLB_PATH: String = "res://assets/character_nusantara.glb"
 const DEFAULT_PROFILE_PATH: String = NusaRigProfile.HUMANOID
+const DEFAULT_FACE_PROFILE_PATH: String = "res://data/characters/face_profiles/humanoid.json"
 const ALIASES := {
 	"Root": ["Root", "root", "Hips", "hips", "mixamorig:Hips"],
 	"Spine": ["Spine", "spine", "Spine1", "mixamorig:Spine"],
@@ -26,17 +27,21 @@ var profile_path: String = DEFAULT_PROFILE_PATH
 var rig_profile: Dictionary = {}
 var rig_report: Dictionary = {}
 var face_controller: NusaFaceController
+var face_atlas: NusaFaceAtlas
+var face_profile_path: String = DEFAULT_FACE_PROFILE_PATH
 var attachment_nodes: Dictionary = {}
 var visual_scale: float = 1.20
 var visual_offset: Vector3 = Vector3(0.0, -0.61, 0.0)
 
 
 func configure_asset(model_path: String, rig_profile_path: String = DEFAULT_PROFILE_PATH,
-		scale_factor: float = 1.20, offset: Vector3 = Vector3(0.0, -0.61, 0.0)) -> void:
+		scale_factor: float = 1.20, offset: Vector3 = Vector3(0.0, -0.61, 0.0),
+		face_config_path: String = DEFAULT_FACE_PROFILE_PATH) -> void:
 	glb_path = model_path
 	profile_path = rig_profile_path
 	visual_scale = scale_factor
 	visual_offset = offset
+	face_profile_path = face_config_path
 
 
 func setup() -> void:
@@ -87,7 +92,34 @@ func _try_import_glb() -> bool:
 	face_controller.name = "NusaFaceController"
 	add_child(face_controller)
 	face_controller.setup(scene)
+	_setup_face_atlas()
 	return true
+
+
+func _setup_face_atlas() -> void:
+	if face_profile_path.is_empty() or not FileAccess.file_exists(face_profile_path) or not bones.has("Head"):
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(face_profile_path))
+	if not parsed is Dictionary:
+		return
+	var face_config: Dictionary = parsed
+	var head_idx: int = skeleton.find_bone(str(bones["Head"]))
+	if head_idx < 0:
+		return
+	var attachment := BoneAttachment3D.new()
+	attachment.name = "FaceTextureAttachment"
+	attachment.bone_name = StringName(str(bones["Head"]))
+	skeleton.add_child(attachment)
+	face_atlas = NusaFaceAtlas.new()
+	face_atlas.name = "NusaFaceAtlas"
+	attachment.add_child(face_atlas)
+	var coords: Array = face_config.get("face_origin_rest", [0.0, 0.790, -0.247])
+	var desired: Transform3D = Transform3D(Basis.IDENTITY,
+		Vector3(float(coords[0]), float(coords[1]), float(coords[2])))
+	face_atlas.transform = skeleton.get_bone_global_rest(head_idx).affine_inverse() * desired
+	face_atlas.setup(face_config)
+	if bool(face_config.get("suppress_legacy_mouth_morphs", true)):
+		face_controller.suppress_mouth_morphs = true
 
 
 static func map_bones(rig: Skeleton3D) -> Dictionary:
@@ -129,7 +161,9 @@ func attach_module(socket_name: String, module_scene: PackedScene,
 
 
 func set_expression(name: String, duration: float = 0.15) -> bool:
-	return face_controller != null and face_controller.set_expression(name, duration)
+	var morph_ok: bool = face_controller != null and face_controller.set_expression(name, duration)
+	var atlas_ok: bool = face_atlas != null and face_atlas.set_expression(name)
+	return morph_ok or atlas_ok
 
 
 func _find_skeleton(candidate: Node) -> Skeleton3D:

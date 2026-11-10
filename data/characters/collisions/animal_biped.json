@@ -1,0 +1,6 @@
+{
+  "id": "nusa_animal_biped_collision_v2",
+  "extends": "humanoid",
+  "radius": 0.25,
+  "interaction_radius": 0.72
+}

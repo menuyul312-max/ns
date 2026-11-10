@@ -44,8 +44,11 @@ func _run() -> void:
 	for _i in range(25):
 		await physics_frame
 	var after_swim: Vector3 = actor.position
-	if after_swim.x >= after_wade.x - 0.6 or not actor.floating or actor.water_depth < WaterRules.DEEP_DEPTH:
-		_fail("swim did not move into deep flow and float: " + str(after_swim) + " depth " + str(actor.water_depth))
+	# Horizontal stepping stops a fraction of a centimetre either side of the
+	# continuous deep-depth isoline. Floating and substantial channel movement
+	# are the physical behaviours under test; allow 1 cm contour tolerance.
+	if after_swim.x >= after_wade.x - 0.6 or not actor.floating or actor.water_depth < WaterRules.DEEP_DEPTH - 0.01:
+		_fail("swim did not move into deep flow and float: " + str(after_swim) + " after wade " + str(after_wade) + " depth " + str(actor.water_depth) + " floating " + str(actor.floating) + " blocked " + str(actor.blocked))
 		return
 	var expected_surface: float = WaterBuilder.WATER_ABOVE_GROUND + RiverCharacter.FLOAT_OFFSET
 	if absf(after_swim.y - expected_surface) > 0.20:

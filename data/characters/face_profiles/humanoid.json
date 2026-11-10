@@ -1,0 +1,10 @@
+{
+  "id": "nusa_humanoid_face_v2",
+  "description": "Original modular eye/mouth atlas over the head bone; coordinates are rest pose skeleton units",
+  "face_origin_rest": [0.0, 0.790, 0.247],
+  "eye_offset": [0.0, 0.073, 0.0],
+  "mouth_offset": [0.0, -0.083, 0.007],
+  "eye_pixel_size": 0.0025,
+  "mouth_pixel_size": 0.0022,
+  "suppress_legacy_mouth_morphs": true
+}

@@ -7,6 +7,8 @@ const GRAVITY: float = 16.0
 const FLOAT_OFFSET: float = 0.18
 const CURRENT_SPEED: float = 0.55
 
+@export_file("*.json") var collision_profile_path: String = NusaCollisionProfile.HUMANOID
+
 enum MotionState { IDLE, WALK, WADE, SWIM }
 
 var island: IslandDefinition
@@ -40,6 +42,11 @@ var wade_blend: float = 0.0
 var swim_blend: float = 0.0
 var current_enabled: bool = true
 var flow_velocity: Vector2 = Vector2.ZERO
+var collision_profile: Dictionary = {}
+var body_foot_offset: float = FOOT_OFFSET
+var body_collision: CollisionShape3D
+var interaction_reach: Area3D
+var interaction_pivot: Node3D
 
 
 func _ready() -> void:
@@ -47,16 +54,40 @@ func _ready() -> void:
 	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
 	floor_max_angle = deg_to_rad(65.0)
 	safe_margin = 0.022
-	collision_layer = 4
+	collision_profile = NusaCollisionProfile.load_profile(collision_profile_path)
+	if collision_profile.is_empty():
+		push_warning("Invalid collision profile %s; using humanoid" % collision_profile_path)
+		collision_profile = NusaCollisionProfile.load_profile()
+	body_foot_offset = float(collision_profile.get("foot_offset", FOOT_OFFSET))
+	collision_layer = int(collision_profile.get("body_layer", 4))
 	# Terrain 1 + original props 16 + traversable connectors 32.
-	collision_mask = 49
+	collision_mask = int(collision_profile.get("world_mask", 49))
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.22
-	capsule.height = FOOT_OFFSET * 2.0
+	capsule.radius = float(collision_profile.get("radius", 0.22))
+	capsule.height = float(collision_profile.get("height", FOOT_OFFSET * 2.0))
 	var collider := CollisionShape3D.new()
 	collider.name = "BodyCollision"
 	collider.shape = capsule
 	add_child(collider)
+	body_collision = collider
+	interaction_pivot = Node3D.new()
+	interaction_pivot.name = "InteractionPivot"
+	add_child(interaction_pivot)
+	interaction_reach = Area3D.new()
+	interaction_reach.name = "InteractionReach"
+	interaction_reach.collision_layer = 0
+	interaction_reach.collision_mask = int(collision_profile.get("interaction_mask", 16))
+	interaction_reach.monitoring = true
+	interaction_reach.monitorable = false
+	interaction_pivot.add_child(interaction_reach)
+	var reach := CollisionShape3D.new()
+	reach.name = "ReachVolume"
+	var sphere := SphereShape3D.new()
+	sphere.radius = float(collision_profile.get("interaction_radius", 0.62))
+	reach.shape = sphere
+	reach.position = Vector3(0.0, float(collision_profile.get("interaction_height", 0.24)),
+		-float(collision_profile.get("interaction_forward", 0.44)))
+	interaction_reach.add_child(reach)
 	_create_model()
 	animation_bridge = MannequinAnimationBridge.new()
 	animation_bridge.name = "AnimationBridge"
@@ -98,14 +129,14 @@ func set_input_direction(axis: Vector2) -> void:
 
 func set_start(x: float, z: float) -> void:
 	var level: int = island.height_at(floori(x / IslandDefinition.TILE_SIZE), floori(z / IslandDefinition.TILE_SIZE))
-	global_position = Vector3(x, RiverBathymetry.floor_height_at(island, x, z, level) + FOOT_OFFSET + 0.05, z)
+	global_position = Vector3(x, RiverBathymetry.floor_height_at(island, x, z, level) + body_foot_offset + 0.05, z)
 	velocity = Vector3.ZERO
 	was_in_water = false
 	ripple_cooldown = 0.0
 
 
 func feet_position() -> Vector3:
-	return global_position - Vector3(0.0, FOOT_OFFSET, 0.0)
+	return global_position - Vector3(0.0, body_foot_offset, 0.0)
 
 
 func _physics_process(delta: float) -> void:
@@ -240,6 +271,8 @@ func _update_motion_state(delta: float, horizontal_velocity: Vector3) -> void:
 	mesh_root.rotation.z = 0.03 * sin(animation_phase) * (walk_blend + wade_blend)
 	if horizontal_velocity.length_squared() > 0.001 and not blocked:
 		mesh_root.rotation.y = lerp_angle(mesh_root.rotation.y, atan2(-horizontal_velocity.x, -horizontal_velocity.z), minf(1.0, delta * 8.0))
+	if interaction_pivot != null:
+		interaction_pivot.rotation.y = mesh_root.rotation.y
 	if skeleton_bridge != null and skeleton_bridge.initialized:
 		skeleton_bridge.travel(state_name(motion_state))
 	if animation_bridge != null and animation_bridge.initialized:

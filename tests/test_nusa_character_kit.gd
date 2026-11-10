@@ -11,7 +11,8 @@ func _run() -> void:
 	var humanoid: Dictionary = NusaRigProfile.load_profile()
 	var animal: Dictionary = NusaRigProfile.load_profile("res://data/characters/profiles/animal_biped.json")
 	var winged: Dictionary = NusaRigProfile.load_profile("res://data/characters/profiles/winged_spirit.json")
-	if humanoid.is_empty() or animal.is_empty() or winged.is_empty():
+	var quadruped: Dictionary = NusaRigProfile.load_profile("res://data/characters/profiles/quadruped.json")
+	if humanoid.is_empty() or animal.is_empty() or winged.is_empty() or quadruped.is_empty():
 		_fail("missing reusable rig profiles")
 		return
 	if not animal["aliases"].has("Ear_L") or not animal["aliases"].has("Foot_L"):
@@ -19,6 +20,9 @@ func _run() -> void:
 		return
 	if not winged["required_roles"].has("Root") or not winged["required_roles"].has("Wing_L"):
 		_fail("winged profile must require core body and both wings")
+		return
+	if quadruped["required_roles"].has("Leg_L") or not quadruped["required_roles"].has("HindLeg_L"):
+		_fail("quadruped must have independent four-legged anatomy")
 		return
 	var rig := CharacterRigVisual.new()
 	root.add_child(rig)
@@ -76,6 +80,10 @@ func _run() -> void:
 	var spirit_report: Dictionary = NusaRigProfile.inspect(rig.skeleton, winged)
 	if bool(spirit_report["valid"]) or not spirit_report["missing_required"].has("Wing_L"):
 		_fail("winged rig should reject absent wing bones")
+		return
+	var four_leg_report: Dictionary = NusaRigProfile.inspect(rig.skeleton, quadruped)
+	if bool(four_leg_report["valid"]) or not four_leg_report["missing_required"].has("FrontLeg_L"):
+		_fail("biped rig must not silently masquerade as a quadruped")
 		return
 	print("PASS — Nusa kit: 23 bones, inherited profiles, 78 morphs, blink, sockets, incompatible rig rejected")
 	quit(0)
