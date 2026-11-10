@@ -16,6 +16,9 @@ generated/character_audit/
 generated/nusa_animation_samples.json
 generated/nusa_animal_biped_probe.glb
 generated/nusa_second_motion_samples.json
+# Private user GLB exports, derived frames, and renders. Never publish them
+# to the source repository; deliver reviewed binary artifacts privately.
+/generated/
 
 # This repository's previous sprints did not track generated Godot sidecars.
 *.import

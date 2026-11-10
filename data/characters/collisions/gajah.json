@@ -1,0 +1,8 @@
+{
+  "id": "nusa_gajah_collision_prototype",
+  "extends": "animal_biped",
+  "radius": 0.28,
+  "height": 1.02,
+  "foot_offset": 0.51,
+  "interaction_radius": 0.70
+}

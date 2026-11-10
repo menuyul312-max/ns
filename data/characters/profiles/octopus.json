@@ -1,0 +1,19 @@
+{
+  "id": "nusa_octopus_v1",
+  "description": "Original octopus rig: eight paired tentacle chains; explicitly non-humanoid",
+  "required_roles": ["Root", "Head", "Tentacle01Base", "Tentacle01Tip", "Tentacle02Base", "Tentacle02Tip", "Tentacle03Base", "Tentacle03Tip", "Tentacle04Base", "Tentacle04Tip", "Tentacle05Base", "Tentacle05Tip", "Tentacle06Base", "Tentacle06Tip", "Tentacle07Base", "Tentacle07Tip", "Tentacle08Base", "Tentacle08Tip"],
+  "optional_roles": [],
+  "aliases": {
+    "Root": ["Root"], "Head": ["Head"],
+    "Tentacle01Base": ["Tentacle01Base"], "Tentacle01Tip": ["Tentacle01Tip"],
+    "Tentacle02Base": ["Tentacle02Base"], "Tentacle02Tip": ["Tentacle02Tip"],
+    "Tentacle03Base": ["Tentacle03Base"], "Tentacle03Tip": ["Tentacle03Tip"],
+    "Tentacle04Base": ["Tentacle04Base"], "Tentacle04Tip": ["Tentacle04Tip"],
+    "Tentacle05Base": ["Tentacle05Base"], "Tentacle05Tip": ["Tentacle05Tip"],
+    "Tentacle06Base": ["Tentacle06Base"], "Tentacle06Tip": ["Tentacle06Tip"],
+    "Tentacle07Base": ["Tentacle07Base"], "Tentacle07Tip": ["Tentacle07Tip"],
+    "Tentacle08Base": ["Tentacle08Base"], "Tentacle08Tip": ["Tentacle08Tip"]
+  },
+  "ancestor_rules": [["Root", "Head"], ["Root", "Tentacle01Base"], ["Tentacle01Base", "Tentacle01Tip"]],
+  "sockets": {"head": ["Head"], "center": ["Root"], "tentacle_front": ["Tentacle07Tip"]}
+}

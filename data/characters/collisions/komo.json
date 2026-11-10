@@ -1,0 +1,8 @@
+{
+  "id": "nusa_komo_collision_prototype",
+  "extends": "animal_biped",
+  "radius": 0.25,
+  "height": 1.00,
+  "foot_offset": 0.50,
+  "interaction_radius": 0.69
+}

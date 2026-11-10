@@ -1,0 +1,13 @@
+{
+  "id": "nusa_gurita_collision_prototype",
+  "description": "Central body capsule only; tentacle interaction/contacts need child hitboxes",
+  "radius": 0.34,
+  "height": 0.88,
+  "foot_offset": 0.44,
+  "body_layer": 4,
+  "world_mask": 49,
+  "interaction_radius": 0.82,
+  "interaction_forward": 0.42,
+  "interaction_height": 0.15,
+  "interaction_mask": 16
+}

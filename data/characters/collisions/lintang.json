@@ -1,0 +1,8 @@
+{
+  "id": "nusa_lintang_collision_prototype",
+  "extends": "animal_biped",
+  "radius": 0.22,
+  "height": 1.04,
+  "foot_offset": 0.52,
+  "interaction_radius": 0.70
+}
