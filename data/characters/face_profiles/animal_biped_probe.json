@@ -1,0 +1,10 @@
+{
+  "id": "nusa_animal_biped_probe_face_v3",
+  "description": "Calibration exclusively for the generated 26-bone creature fixture",
+  "face_origin_rest": [0.0, 1.16, 0.279],
+  "eye_offset": [0.0, 0.065, 0.0],
+  "mouth_offset": [0.0, -0.085, 0.135],
+  "eye_pixel_size": 0.00235,
+  "mouth_pixel_size": 0.00175,
+  "suppress_legacy_mouth_morphs": true
+}

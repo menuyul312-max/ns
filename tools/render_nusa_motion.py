@@ -21,6 +21,7 @@ from mathutils import Matrix, Quaternion, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from render_nusa_preview import point_camera, prepare_scene
+from render_nusa_face_atlas_v2 import texture_layer
 
 
 # Godot skeletons are Y-up, whereas Blender glTF importer gives Z-up bones.
@@ -47,7 +48,49 @@ def apply_pose(armature, bone_order, rest, sample):
     bpy.context.view_layer.update()
 
 
-def make_render(model, sample_file, output_dir, resolution, samples, loops, only, max_frames):
+def optional_face_layers(atlas_dir, profile_path):
+    if not atlas_dir:
+        return None
+    config = json.loads(profile_path.read_text(encoding="utf-8"))
+    point = config["face_origin_rest"]
+    eyes_offset = config["eye_offset"]
+    mouth_offset = config["mouth_offset"]
+    eye, eye_uv = texture_layer("EyesTextureLayer", atlas_dir / "nusa_eyes_atlas.png",
+                                128 * float(config["eye_pixel_size"]),
+                                48 * float(config["eye_pixel_size"]), 8, -1)
+    mouth, mouth_uv = texture_layer("MouthTextureLayer", atlas_dir / "nusa_mouth_atlas.png",
+                                    64 * float(config["mouth_pixel_size"]),
+                                    36 * float(config["mouth_pixel_size"]), 6, -1)
+    front_y = -abs(float(point[2]))
+    eye.location = (float(point[0]) + float(eyes_offset[0]),
+                    front_y - abs(float(eyes_offset[2])),
+                    float(point[1]) + float(eyes_offset[1]))
+    mouth.location = (float(point[0]) + float(mouth_offset[0]),
+                      front_y - abs(float(mouth_offset[2])),
+                      float(point[1]) + float(mouth_offset[1]))
+    bpy.context.view_layer.update()
+    return {"objects": [(eye, eye.matrix_world.copy()), (mouth, mouth.matrix_world.copy())],
+            "uv_offsets": [eye_uv, mouth_uv]}
+
+
+def position_face_layers(face_layers, armature, expression):
+    if not face_layers:
+        return
+    head = armature.pose.bones.get("Head")
+    if head is None:
+        return
+    current = armature.matrix_world @ head.matrix
+    rest = armature.matrix_world @ head.bone.matrix_local
+    delta = current @ rest.inverted()
+    for obj, base_matrix in face_layers["objects"]:
+        obj.matrix_world = delta @ base_matrix
+    eye_id, mouth_id = {"happy": (4, 1), "talk": (0, 3)}.get(expression, (0, 0))
+    face_layers["uv_offsets"][0].inputs[1].default_value = (eye_id / 8.0, 0, 0)
+    face_layers["uv_offsets"][1].inputs[1].default_value = (mouth_id / 6.0, 0, 0)
+
+
+def make_render(model, sample_file, output_dir, resolution, samples, loops, only, max_frames,
+                face_atlas_dir=None, face_profile=None):
     motion = json.loads(sample_file.read_text(encoding="utf-8"))
     if motion.get("schema") != "nusa_motion_samples_v1":
         raise ValueError("Invalid Godot pose export schema")
@@ -68,6 +111,7 @@ def make_render(model, sample_file, output_dir, resolution, samples, loops, only
         raise ValueError("Bone names differ between Godot GLB and Blender GLB")
     rest = {name: transform_from_sample(value) for name, value in zip(names, motion["rest_global"])}
     order = key_order(armature, names)
+    face_layers = optional_face_layers(face_atlas_dir, face_profile)
     # Aim through a slight 3/4 view so hands and both feet remain visible.
     angle = math.radians(-21.0)
     dist = height * 3.3
@@ -98,6 +142,9 @@ def make_render(model, sample_file, output_dir, resolution, samples, loops, only
             for index, data in enumerate(sampled):
                 sample = dict(zip(names, data["pose"]))
                 apply_pose(armature, order, rest, sample)
+                position_face_layers(face_layers, armature,
+                                     "happy" if clip["name"] in ("wave", "clap") else
+                                     "talk" if clip["name"] == "talk" else "neutral")
                 if index == 3 and cycle == 0:
                     p = armature.pose.bones.get("LeftUpperArm")
                     if p is not None:
@@ -111,7 +158,9 @@ def make_render(model, sample_file, output_dir, resolution, samples, loops, only
                 break
         manifest["clips"].append({"name": clip["name"], "start_frame": start_idx,
                                   "end_frame": frame_idx, "category":
-                                  "locomotion" if len(manifest["clips"]) < 8 else "action"})
+                                  "locomotion" if clip["name"] in
+                                  ("idle", "walk", "run", "turn", "start_stop", "sit", "wade", "swim")
+                                  else "action"})
         print(f"NUSA_MOTION_RENDER {clip['name']} {frame_idx-start_idx} frames")
         if max_frames and frame_idx >= max_frames:
             break
@@ -132,6 +181,10 @@ if __name__ == "__main__":
     parser.add_argument("--loops", type=int, default=2)
     parser.add_argument("--only", nargs="*", default=[])
     parser.add_argument("--max-frames", type=int, default=0)
+    parser.add_argument("--face-atlas-dir", type=Path)
+    parser.add_argument("--face-profile", type=Path,
+                        default=Path("data/characters/face_profiles/humanoid.json"))
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
     make_render(args.model, args.samples_json, args.output_dir, args.resolution,
-                args.samples, args.loops, args.only, args.max_frames)
+                args.samples, args.loops, args.only, args.max_frames,
+                args.face_atlas_dir, args.face_profile)

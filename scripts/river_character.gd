@@ -8,6 +8,11 @@ const FLOAT_OFFSET: float = 0.18
 const CURRENT_SPEED: float = 0.55
 
 @export_file("*.json") var collision_profile_path: String = NusaCollisionProfile.HUMANOID
+@export_file("*.glb") var character_model_path: String = CharacterRigVisual.OPTIONAL_GLB_PATH
+@export_file("*.json") var character_rig_profile_path: String = NusaRigProfile.HUMANOID
+@export_file("*.json") var character_face_profile_path: String = CharacterRigVisual.DEFAULT_FACE_PROFILE_PATH
+@export var character_visual_scale: float = 1.20
+@export var character_visual_offset: Vector3 = Vector3(0.0, -0.61, 0.0)
 
 enum MotionState { IDLE, WALK, WADE, SWIM }
 
@@ -96,6 +101,8 @@ func _ready() -> void:
 	rig_visual = CharacterRigVisual.new()
 	rig_visual.name = "CharacterRigVisual"
 	mesh_root.add_child(rig_visual)
+	rig_visual.configure_asset(character_model_path, character_rig_profile_path,
+		character_visual_scale, character_visual_offset, character_face_profile_path)
 	rig_visual.setup()
 	skeleton_bridge = SkeletonAnimationBridge.new()
 	skeleton_bridge.name = "SkeletonAnimationBridge"

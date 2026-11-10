@@ -36,20 +36,26 @@ def encode(frames_dir, video, gif, mode="motion"):
         input_pattern = str(frames_dir / "face_%04d.png")
     else:
         entries = manifest["clips"]
-        if len(entries) != 16 or manifest["total_frames"] < 180:
+        if mode == "motion" and (len(entries) != 16 or manifest["total_frames"] < 180):
             raise ValueError("Incomplete 16-clip render; will not publish a partial showcase")
+        if mode == "second" and (not entries or manifest["total_frames"] < len(entries) * 3):
+            raise ValueError("Empty or incomplete second-character motion review")
         input_pattern = str(frames_dir / "motion_%05d.png")
     filters = ["hqdn3d=3:2.5:4:3",
                "drawbox=x=0:y=0:w=iw:h=78:color=black@0.42:t=fill",
                drawtext("NUSA CHARACTER / FACE PRESETS V1" if mode == "face" else
+                        "NUSA RIG PORTABILITY / PROBE V2.1" if mode == "second" else
                         "NUSA CHARACTER / RIG MOTION V1", 8, 17)]
     for idx, entry in enumerate(entries, start=1):
         category = ("EKSPRESI" if mode == "face" else
+                    "AKSI" if mode == "second" and entry["name"] in
+                    ("shovel", "pickup", "carry", "interact", "watering", "talk", "wave", "clap") else
                     "GERAK DASAR" if entry["category"] == "locomotion" else "AKSI")
         filters.append(drawtext(f"{idx:02d}  {entry['name'].upper()}   /   {category}", 33, 25,
                                 f"between(n,{entry['start_frame']},{entry['end_frame']-1})"))
     filters.extend(["drawbox=x=0:y=ih-35:w=iw:h=35:color=black@0.38:t=fill",
                     drawtext("Godot morph presets + Blender CPU rendering" if mode == "face" else
+                             "23 to 26 bone retarget - Blender CPU preview" if mode == "second" else
                              "Godot bone poses + Blender CPU rendering", "h-27", 13)])
     video.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
@@ -71,6 +77,6 @@ if __name__ == "__main__":
     parser.add_argument("--frames-dir", type=Path, required=True)
     parser.add_argument("--video", type=Path, required=True)
     parser.add_argument("--gif", type=Path, required=False)
-    parser.add_argument("--mode", choices=["motion", "face"], default="motion")
+    parser.add_argument("--mode", choices=["motion", "face", "second"], default="motion")
     args = parser.parse_args()
     encode(args.frames_dir, args.video, args.gif, args.mode)

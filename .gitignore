@@ -14,6 +14,8 @@ assets/character_nusantara.glb
 assets/character_nusantara_*.png
 generated/character_audit/
 generated/nusa_animation_samples.json
+generated/nusa_animal_biped_probe.glb
+generated/nusa_second_motion_samples.json
 
 # This repository's previous sprints did not track generated Godot sidecars.
 *.import

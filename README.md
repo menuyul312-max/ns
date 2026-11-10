@@ -1,5 +1,7 @@
 # Nusantara World Lab — Sprint 54 (Stratified Cliffs and Chamfered Lips)
 
+**Nusa Character Kit v2.1 (uji karakter kedua):** [`NUSA_CHARACTER_KIT_V2_1.md`](NUSA_CHARACTER_KIT_V2_1.md) menjelaskan pengujian reuse pada dua GLB skinned 23/26 bone yang berbeda, sampel 16 klip melalui rest-axis/idle-pose retarget, kalibrasi atlas wajah per target, dan collision per spesies. GLB 26 bone adalah **fixture original buatan skrip**, bukan Komo asli. Semua generated assets tetap gitignored.
+
 **Nusa Character Base Kit v2:** lihat [`NUSA_CHARACTER_KIT_V2.md`](NUSA_CHARACTER_KIT_V2.md). Wajah diperluas menjadi atlas mata/mulut yang independen pada kepala, retarget *pose* skeleton lintas profil, profil collision tubuh/sensor interaksi, serta kontrak skeleton quadruped terpisah. V2 tetap prototipe dan bukan replika persis struktur/animasi ACNH.
 
 **Nusa Character Base Kit v1:** dokumentasi kontrak skeleton biped/hewan/spirit, 23-bone GLB contoh pengguna, 78 target ekspresi, 16 klip animasi prototipe, socket modul, pemeriksa GLB, dan alat Blender untuk transfer skin terbatas ada di [`NUSA_CHARACTER_KIT_V1.md`](NUSA_CHARACTER_KIT_V1.md). Sumber karakter pengguna dan semua aset Nintendo **tidak disertakan dalam repo**.
